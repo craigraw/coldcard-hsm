@@ -1,5 +1,6 @@
 plugins {
     id 'application'
+    id 'extra-java-module-info'
 }
 
 group = 'com.sparrowwallet'
@@ -17,12 +18,46 @@ application {
 }
 
 dependencies {
+    implementation(project(':drongo')) {
+        exclude group: 'org.hamcrest'
+        exclude group: 'junit'
+    }
     implementation name: 'hid4java-develop-SNAPSHOT'
     implementation('net.java.dev.jna:jna:5.12.0')
+    implementation('org.slf4j:slf4j-api:1.7.30')
     testImplementation platform('org.junit:junit-bom:5.9.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }
 
 test {
     useJUnitPlatform()
+}
+
+extraJavaModuleInfo {
+    module('hid4java-develop-SNAPSHOT.jar', 'org.hid4java', '0.8.0') {
+        exports('org.hid4java')
+        exports('org.hid4java.event')
+    }
+    module('cbor-0.9.jar', 'co.nstant.in.cbor', '0.9') {
+        exports('co.nstant.in.cbor')
+        exports('co.nstant.in.cbor.model')
+        exports('co.nstant.in.cbor.builder')
+    }
+    module('jeromq-0.5.0.jar', 'jeromq', '0.5.0') {
+        exports('org.zeromq')
+    }
+    module('json-simple-1.1.1.jar', 'json.simple', '1.1.1') {
+        exports('org.json.simple')
+    }
+    module('logback-classic-1.2.8.jar', 'logback.classic', '1.2.8') {
+        exports('ch.qos.logback.classic')
+        requires('org.slf4j')
+        requires('logback.core')
+        requires('java.xml')
+        requires('java.logging')
+    }
+    module('jnacl-1.0.0.jar', 'eu.neilalexander.jnacl', '1.0.0')
+    module('logback-core-1.2.8.jar', 'logback.core', '1.2.8') {
+        requires('java.xml')
+    }
 }

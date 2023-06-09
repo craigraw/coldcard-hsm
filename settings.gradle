@@ -1,2 +1,3 @@
 rootProject.name = 'coldcard-hsm'
+include 'drongo'
 

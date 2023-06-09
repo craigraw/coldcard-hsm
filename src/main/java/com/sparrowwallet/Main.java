@@ -3,8 +3,12 @@ package com.sparrowwallet;
 import com.sun.jna.Platform;
 import org.hid4java.*;
 import org.hid4java.event.HidServicesEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Main implements HidServicesListener {
+    private static final Logger log = LoggerFactory.getLogger(Main.class);
+
     public static final String ANSI_RESET = "\u001B[0m";
     public static final String ANSI_BLACK = "\u001B[30m";
     public static final String ANSI_RED = "\u001B[31m";
@@ -16,25 +20,12 @@ public class Main implements HidServicesListener {
     public static final String ANSI_WHITE = "\u001B[37m";
 
     public Main() {
-        printPlatform();
-
-        HidServicesSpecification hidServicesSpecification = new HidServicesSpecification();
-        // Use the v0.7.0 manual start feature to get immediate attach events
-        hidServicesSpecification.setAutoStart(false);
-
-        // Get HID services using custom specification
-        HidServices hidServices = HidManager.getHidServices(hidServicesSpecification);
-        hidServices.addHidServicesListener(this);
-
-        // Manually start the services to get attachment event
-        System.out.println(ANSI_GREEN + "Manually starting HID services." + ANSI_RESET);
-        hidServices.start();
-
-        System.out.println(ANSI_GREEN + "Enumerating attached devices..." + ANSI_RESET);
-
-        // Provide a list of attached devices
-        for (HidDevice hidDevice : hidServices.getAttachedHidDevices()) {
-            System.out.println(hidDevice);
+        try {
+            ColdcardClient coldcardClient = new ColdcardClient();
+            DeviceVersion deviceVersion = coldcardClient.getVersion();
+            System.out.println(deviceVersion);
+        } catch(Exception e) {
+            log.error("Device error", e);
         }
     }
 
