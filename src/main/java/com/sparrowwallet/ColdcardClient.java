@@ -8,4 +8,13 @@ public class ColdcardClient {
             return CCProtocolUnpacker.vers(recv);
         }
     }
+
+    public byte[] sign(byte[] psbt) throws DeviceException {
+        try(ColdcardDevice device = new ColdcardDevice()) {
+            device.checkMitm();
+        }
+
+        return new byte[0];
+    }
+
 }

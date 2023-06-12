@@ -2,6 +2,7 @@ package com.sparrowwallet;
 
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.bip47.SecretPoint;
+import com.sparrowwallet.drongo.crypto.ECDSASignature;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import org.hid4java.HidDevice;
 import org.hid4java.HidManager;
@@ -19,6 +20,8 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.security.*;
 import java.util.Arrays;
 import java.util.List;
@@ -65,6 +68,30 @@ public class ColdcardDevice implements Closeable {
         }
     }
 
+    public void checkMitm() throws DeviceException {
+        byte[] recv = sendRecv(CCProtocolPacker.checkMitm(), true, 5000);
+        byte[] signatureBytes = CCProtocolUnpacker.getMitmSignature(recv);
+
+        ECKey xpub = ECKey.fromPublicOnly(deviceId.getPubKeyString());
+
+        byte[] rBytes = new byte[32];
+        byte[] sBytes = new byte[32];
+
+        ByteBuffer buffer = ByteBuffer.wrap(signatureBytes);
+        buffer.get(); // Skip the sign byte (0x30)
+        buffer.get(rBytes, 0, 32);
+        buffer.get(sBytes, 0, 32);
+
+        BigInteger r = new BigInteger(1, rBytes);
+        BigInteger s = new BigInteger(1, sBytes);
+
+        ECDSASignature signature = new ECDSASignature(r, s);
+
+        if(!signature.verify(sessionKey, xpub.getPubKey())) {
+            throw new DeviceMitmFailedException("Failed to verify signature - possible MitM attack!");
+        }
+    }
+
     private List<HidDevice> getHidDevices() {
         HidServicesSpecification hidServicesSpecification = new HidServicesSpecification();
         hidServicesSpecification.setAutoStart(false);
@@ -80,8 +107,9 @@ public class ColdcardDevice implements Closeable {
 
         try {
             ECKey remotePubKey = deviceId.getRemotePubKey();
-            SecretPoint secretPoint = new SecretPoint(localKey.getPrivKeyBytes(), remotePubKey.getPubKey());
-            byte[] secretBytes = ECKey.fromPublicOnly(secretPoint.ECDHSecretAsBytes()).getPubKeyUncompressed();
+            new SecretPoint(localKey.getPrivKeyBytes(), remotePubKey.getPubKey());
+            ECKey ecKey = remotePubKey.multiply(localKey.getPrivKey());
+            byte[] secretBytes = ecKey.getPubKey();
 
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             sessionKey = digest.digest(Arrays.copyOfRange(secretBytes, 1, secretBytes.length));
@@ -139,7 +167,7 @@ public class ColdcardDevice implements Closeable {
 
         byte flag;
         do {
-            Byte[] buf = hidDevice.read(64, timeout != 0 ? timeout : 1);
+            Byte[] buf = hidDevice.read(64, timeout != 0 ? timeout : 1000);
 
             if (buf.length == 0 && timeout != 0) {
                 // give it another try

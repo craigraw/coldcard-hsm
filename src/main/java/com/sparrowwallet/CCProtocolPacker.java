@@ -22,4 +22,8 @@ public class CCProtocolPacker {
     public static byte[] version() {
         return "vers".getBytes(StandardCharsets.UTF_8);
     }
+
+    public static byte[] checkMitm() {
+        return "mitm".getBytes(StandardCharsets.UTF_8);
+    }
 }

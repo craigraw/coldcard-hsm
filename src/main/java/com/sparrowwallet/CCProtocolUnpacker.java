@@ -39,6 +39,15 @@ public class CCProtocolUnpacker {
         return new DeviceVersion(lines[0], lines[1], lines[2], lines[3], lines[4]);
     }
 
+    public static byte[] getMitmSignature(byte[] msg) throws DeviceProtocolException {
+        String sign = getSign(msg);
+        if(!sign.equals("biny")) {
+            throw new DeviceProtocolException("Invalid response to mitm: " + sign);
+        }
+
+        return Arrays.copyOfRange(msg, 4, msg.length);
+    }
+
     private static String getSign(byte[] msg) {
         assert msg.length >= 4;
         return new String(Arrays.copyOfRange(msg, 0, 4), StandardCharsets.UTF_8);

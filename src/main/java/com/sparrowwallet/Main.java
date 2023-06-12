@@ -24,6 +24,8 @@ public class Main implements HidServicesListener {
             ColdcardClient coldcardClient = new ColdcardClient();
             DeviceVersion deviceVersion = coldcardClient.getVersion();
             System.out.println(deviceVersion);
+
+            coldcardClient.sign(null);
         } catch(Exception e) {
             log.error("Device error", e);
         }
